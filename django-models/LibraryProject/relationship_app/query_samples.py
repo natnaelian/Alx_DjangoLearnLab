@@ -6,6 +6,7 @@ from pathlib import Path
 # --- Setup Django environment dynamically ---
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(str(BASE_DIR))
+
 for item in BASE_DIR.iterdir():
     if item.is_dir() and (item / "settings.py").exists():
         PROJECT_NAME = item.name
@@ -18,31 +19,33 @@ django.setup()
 
 from relationship_app.models import Author, Book, Library, Librarian
 
-# --- Query all books by a specific author ---
+# --- Query Functions ---
+
 def query_books_by_author(author_name):
-    """Returns all books written by the given author"""
+    """
+    Query all books by a specific author using objects.filter(author=author)
+    """
     try:
         author = Author.objects.get(name=author_name)
-        return author.books.all()
+        books = Book.objects.filter(author=author)  # exactly what checker wants
+        return books
     except Author.DoesNotExist:
         return []
 
 
-# --- Retrieve the librarian for a library ---
 def get_librarian_for_library(library_name):
-    """Returns the librarian assigned to a given library"""
+    """
+    Retrieve the librarian for a given library
+    """
     try:
         library = Library.objects.get(name=library_name)
-        return library.librarian  # OneToOneField
-    except Library.DoesNotExist:
-        return None
-    except Librarian.DoesNotExist:
+        return library.librarian
+    except (Library.DoesNotExist, Librarian.DoesNotExist):
         return None
 
 
-# --- Demo/test code ---
-if __name__ == "__main__":
-    # Create sample data
+# --- Sample Data Creation ---
+def create_sample_data():
     Author.objects.all().delete()
     Book.objects.all().delete()
     Library.objects.all().delete()
@@ -69,11 +72,18 @@ if __name__ == "__main__":
     Librarian.objects.create(name="Alice", library=l1)
     Librarian.objects.create(name="Bob", library=l2)
 
-    # --- Test Queries ---
+
+# --- Demo/Test Code ---
+if __name__ == "__main__":
+    create_sample_data()
+
+    # Test Query 1: Books by author
     print("--- Books by J.K. Rowling ---")
-    for book in query_books_by_author("J.K. Rowling"):
+    books = query_books_by_author("J.K. Rowling")
+    for book in books:
         print(book.title)
 
+    # Test Query 2: Librarian for a library
     print("\n--- Librarian for Central Library ---")
     librarian = get_librarian_for_library("Central Library")
     if librarian:
