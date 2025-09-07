@@ -96,10 +96,16 @@ def delete_book(request, pk):
         return redirect("list_books")
     return render(request, "relationship_app/book_confirm_delete.html", {"book": book})
 
-# Check if user is in Admin role (is_staff or belongs to "Admin" group")
+# Check if user is in Admin role (is_staff or belongs to "Admin" group)
 def is_admin(user):
     return user.is_staff or user.groups.filter(name="Admin").exists()
 
 @user_passes_test(is_admin)
 def admin_view(request):
     return render(request, "relationship_app/admin_view.html")
+
+def member_view(request):
+    return render(request, "relationship_app/member_view.html")
+
+def librarian_view(request):
+    return render(request, "relationship_app/librarian_view.html")
