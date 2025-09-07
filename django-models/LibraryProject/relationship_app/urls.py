@@ -10,6 +10,16 @@ urlpatterns = [
     # Class-based view
     path("library/<int:pk>/", LibraryDetailView.as_view(), name="library_detail"),
 
+    # Authentication
+    path("register/", views.register_view, name="register"),
+    path("login/", views.login_view, name="login"),
+    path("logout/", views.logout_view, name="logout"),
+
+    # Secured book operations
+    path("books/add/", views.add_book, name="add_book"),
+    path("books/<int:pk>/edit/", views.edit_book, name="edit_book"),
+    path("books/<int:pk>/delete/", views.delete_book, name="delete_book"),
+
     # User registration
     path("register/", views.register_view, name="register"),
 
