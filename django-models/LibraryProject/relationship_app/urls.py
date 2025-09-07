@@ -30,4 +30,7 @@ urlpatterns = [
     
     # Admin-only view
     path("admin-only/", views.admin_view, name="admin_view"),
+    path('add_book/', add_book, name='add_book'),
+    path('edit_book/<int:pk>/', edit_book, name='edit_book'),
+    path('delete_book/<int:pk>/', delete_book, name='delete_book'),
 ]
