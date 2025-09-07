@@ -6,7 +6,7 @@ from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.forms import
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib import messages
-from django.contrib.auth.decorators import permission_required
+from django.contrib.auth.decorators import permission_required, user_passes_test
 from .forms import BookForm   # we'll create a simple form for Book
 
 # Function-based view: list all books
@@ -95,3 +95,11 @@ def delete_book(request, pk):
         book.delete()
         return redirect("list_books")
     return render(request, "relationship_app/book_confirm_delete.html", {"book": book})
+
+# Check if user is in Admin role (is_staff or belongs to "Admin" group")
+def is_admin(user):
+    return user.is_staff or user.groups.filter(name="Admin").exists()
+
+@user_passes_test(is_admin)
+def admin_view(request):
+    return render(request, "relationship_app/admin_view.html")

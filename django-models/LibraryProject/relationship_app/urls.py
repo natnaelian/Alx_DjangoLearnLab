@@ -28,4 +28,7 @@ urlpatterns = [
 
     # User logout
     path("logout/", LogoutView.as_view(template_name="relationship_app/logout.html"), name="logout"),
+    
+    # Admin-only view
+    path("admin-only/", views.admin_view, name="admin_view"),
 ]
