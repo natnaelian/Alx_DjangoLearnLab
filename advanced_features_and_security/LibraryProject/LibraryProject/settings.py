@@ -133,3 +133,15 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
 SECURE_SSL_REDIRECT = True
+SECURE_HSTS_SECONDS = 31536000
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True  # ✅ Apply to subdomains
+SECURE_HSTS_PRELOAD = True  # ✅ Allow preload into browsers
+
+# Secure cookies
+SESSION_COOKIE_SECURE = True  # ✅ Session cookies only via HTTPS
+CSRF_COOKIE_SECURE = True  # ✅ CSRF cookies only via HTTPS
+
+# Browser-side protections
+X_FRAME_OPTIONS = "DENY"  # ✅ Prevent clickjacking
+SECURE_CONTENT_TYPE_NOSNIFF = True  # ✅ Prevent MIME sniffing
+SECURE_BROWSER_XSS_FILTER = True  # ✅ Mitigate reflected XSS
