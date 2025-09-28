@@ -1,129 +1,86 @@
-from rest_framework import generics, mixins
-from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
-from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import generics, permissions, filters
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.filters import SearchFilter, OrderingFilter
 from .models import Book
 from .serializers import BookSerializer
 
-# View for listing all books and creating new ones
-class BookListView(
-    mixins.ListModelMixin,
-    mixins.CreateModelMixin,
-    generics.GenericAPIView
-):
+
+# ===============================
+# BOOK LIST VIEW
+# ===============================
+class BookListView(generics.ListAPIView):
     """
-    Handles GET requests to list all books and POST requests to create a new book.
-    Supports:
-    - Filtering by title, author, publication_year (e.g., ?title=Book&author=1&publication_year=2023).
-    - Searching by title and author name (e.g., ?search=Rowling).
-    - Ordering by title, publication_year (e.g., ?ordering=-publication_year).
-    Permissions: Read-only for unauthenticated users, full access for authenticated users.
+    GET /api/books/
+    Retrieves a list of all books with support for:
+    - Filtering by title, author name, and publication_year
+    - Searching by title and author name
+    - Ordering by title or publication_year
     """
     queryset = Book.objects.all()
     serializer_class = BookSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
-    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['title', 'author', 'publication_year']  # Fields for exact filtering
-    search_fields = ['title', 'author__name']  # Fields for text-based search
-    ordering_fields = ['title', 'publication_year']  # Fields for ordering
-    ordering = ['title']  # Default ordering
+    permission_classes = [permissions.AllowAny]
 
-    def get(self, request, *args, **kwargs):
-        return self.list(request, *args, **kwargs)
+    # Enable filtering, searching, ordering
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
 
-    def post(self, request, *args, **kwargs):
-        return self.create(request, *args, **kwargs)
+    # Filtering fields
+    filterset_fields = ['title', 'author__name', 'publication_year']
 
-    def get_queryset(self):
-        """
-        Customizes queryset to support filtering by author_id query parameter (backward compatibility).
-        """
-        queryset = super().get_queryset()
-        author_id = self.request.query_params.get('author_id')
-        if author_id:
-            queryset = queryset.filter(author_id=author_id)
-        return queryset
+    # Search fields (text search)
+    search_fields = ['title', 'author__name']
 
-# View for retrieving, updating, or deleting a specific book
-class BookDetailView(
-    mixins.RetrieveModelMixin,
-    mixins.UpdateModelMixin,
-    mixins.DestroyModelMixin,
-    generics.GenericAPIView
-):
+    # Ordering fields
+    ordering_fields = ['title', 'publication_year']
+    ordering = ['title']  # default ordering
+
+
+# ===============================
+# BOOK DETAIL VIEW
+# ===============================
+class BookDetailView(generics.RetrieveAPIView):
     """
-    Handles GET, PUT, and DELETE requests for a specific book identified by its primary key.
-    Permissions: Read-only for unauthenticated users, full access for authenticated users.
+    GET /api/books/<id>/
+    Retrieves a single book by its ID.
     """
     queryset = Book.objects.all()
     serializer_class = BookSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.AllowAny]
 
-    def get(self, request, *args, **kwargs):
-        return self.retrieve(request, *args, **kwargs)
 
-    def put(self, request, *args, **kwargs):
-        return self.update(request, *args, **kwargs)
-
-    def delete(self, request, *args, **kwargs):
-        return self.destroy(request, *args, **kwargs)
-
-# View for creating a book via POST
-class BookCreateView(generics.GenericAPIView):
+# ===============================
+# BOOK CREATE VIEW
+# ===============================
+class BookCreateView(generics.CreateAPIView):
     """
-    Handles POST requests to create a new book at /api/books/create/.
-    Expects book data (title, publication_year, author) in the request body.
-    Permissions: Authenticated users only.
+    POST /api/books/create/
+    Allows authenticated users to create a new book.
     """
+    queryset = Book.objects.all()
     serializer_class = BookSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-# View for updating a book via POST with ID in request body
-class BookUpdateView(generics.GenericAPIView):
+# ===============================
+# BOOK UPDATE VIEW
+# ===============================
+class BookUpdateView(generics.UpdateAPIView):
     """
-    Handles POST requests to update a book. Expects 'id' and book data in the request body.
-    Permissions: Authenticated users only.
+    PUT /api/books/<id>/update/
+    PATCH /api/books/<id>/update/
+    Allows authenticated users to update an existing book.
     """
+    queryset = Book.objects.all()
     serializer_class = BookSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request, *args, **kwargs):
-        book_id = request.data.get('id')
-        if not book_id:
-            return Response({"error": "Book ID is required"}, status=status.HTTP_400_BAD_REQUEST)
-        try:
-            book = Book.objects.get(pk=book_id)
-        except Book.DoesNotExist:
-            return Response({"error": "Book not found"}, status=status.HTTP_404_NOT_FOUND)
-        
-        serializer = self.get_serializer(book, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
-# View for deleting a book via POST with ID in request body
-class BookDeleteView(generics.GenericAPIView):
+# ===============================
+# BOOK DELETE VIEW
+# ===============================
+class BookDeleteView(generics.DestroyAPIView):
     """
-    Handles POST requests to delete a book. Expects 'id' in the request body.
-    Permissions: Authenticated users only.
+    DELETE /api/books/<id>/delete/
+    Allows authenticated users to delete a book.
     """
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request, *args, **kwargs):
-        book_id = request.data.get('id')
-        if not book_id:
-            return Response({"error": "Book ID is required"}, status=status.HTTP_400_BAD_REQUEST)
-        try:
-            book = Book.objects.get(pk=book_id)
-            book.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        except Book.DoesNotExist:
-            return Response({"error": "Book not found"}, status=status.HTTP_404_NOT_FOUND)
+    queryset = Book.objects.all()
+    serializer_class = BookSerializer
+    permission_classes = [permissions.IsAuthenticated]
