@@ -13,12 +13,24 @@ class BookListView(
 ):
     """
     Handles GET requests to list all books and POST requests to create a new book.
-    Supports filtering by author_id via query parameter (e.g., ?author_id=1).
+    Supports:
+    - Filtering by title, author, publication_year (e.g., ?title=Book&author=1&publication_year=2023).
+    - Searching by title and author name (e.g., ?search=Rowling).
+    - Ordering by title, publication_year (e.g., ?ordering=-publication_year).
     Permissions: Read-only for unauthenticated users, full access for authenticated users.
     """
     queryset = Book.objects.all()
     serializer_class = BookSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
+    filter_backends = [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
+    ]
+    filterset_fields = ['title', 'author', 'publication_year']  # Fields for exact filtering
+    search_fields = ['title', 'author__name']  # Fields for text-based search
+    ordering_fields = ['title', 'publication_year']  # Fields for ordering
+    ordering = ['title']  # Default ordering
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
@@ -28,7 +40,7 @@ class BookListView(
 
     def get_queryset(self):
         """
-        Customizes queryset to support filtering by author_id query parameter.
+        Customizes queryset to support filtering by author_id query parameter (backward compatibility).
         """
         queryset = super().get_queryset()
         author_id = self.request.query_params.get('author_id')
