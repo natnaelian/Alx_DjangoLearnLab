@@ -1,58 +1,119 @@
-from rest_framework import generics, permissions
+from rest_framework import generics, mixins
+from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
 from .models import Book
 from .serializers import BookSerializer
 
-
-# === LIST VIEW ===
-class BookListView(generics.ListAPIView):
+# View for listing all books and creating new ones
+class BookListView(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    generics.GenericAPIView
+):
     """
-    GET /books/
-    Retrieves a list of all books.
-    """
-    queryset = Book.objects.all()
-    serializer_class = BookSerializer
-    permission_classes = [permissions.AllowAny]
-
-
-# === DETAIL VIEW ===
-class BookDetailView(generics.RetrieveAPIView):
-    """
-    GET /books/<id>/
-    Retrieves a single book by ID.
+    Handles GET requests to list all books and POST requests to create a new book.
+    Supports filtering by author_id via query parameter (e.g., ?author_id=1).
+    Permissions: Read-only for unauthenticated users, full access for authenticated users.
     """
     queryset = Book.objects.all()
     serializer_class = BookSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
 
-# === CREATE VIEW ===
-class BookCreateView(generics.CreateAPIView):
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+    def get_queryset(self):
+        """
+        Customizes queryset to support filtering by author_id query parameter.
+        """
+        queryset = super().get_queryset()
+        author_id = self.request.query_params.get('author_id')
+        if author_id:
+            queryset = queryset.filter(author_id=author_id)
+        return queryset
+
+# View for retrieving, updating, or deleting a specific book
+class BookDetailView(
+    mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
+    generics.GenericAPIView
+):
     """
-    POST /books/create/
-    Allows authenticated users to create a new book.
-    """
-    queryset = Book.objects.all()
-    serializer_class = BookSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-
-# === UPDATE VIEW ===
-class BookUpdateView(generics.UpdateAPIView):
-    """
-    PUT/PATCH /books/<id>/update/
-    Allows authenticated users to update an existing book.
-    """
-    queryset = Book.objects.all()
-    serializer_class = BookSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-
-# === DELETE VIEW ===
-class BookDeleteView(generics.DestroyAPIView):
-    """
-    DELETE /books/<id>/delete/
-    Allows authenticated users to delete a book.
+    Handles GET, PUT, and DELETE requests for a specific book identified by its primary key.
+    Permissions: Read-only for unauthenticated users, full access for authenticated users.
     """
     queryset = Book.objects.all()
     serializer_class = BookSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get(self, request, *args, **kwargs):
+        return self.retrieve(request, *args, **kwargs)
+
+    def put(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
+
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
+
+# View for creating a book via POST
+class BookCreateView(generics.GenericAPIView):
+    """
+    Handles POST requests to create a new book at /api/books/create/.
+    Expects book data (title, publication_year, author) in the request body.
+    Permissions: Authenticated users only.
+    """
+    serializer_class = BookSerializer
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+# View for updating a book via POST with ID in request body
+class BookUpdateView(generics.GenericAPIView):
+    """
+    Handles POST requests to update a book. Expects 'id' and book data in the request body.
+    Permissions: Authenticated users only.
+    """
+    serializer_class = BookSerializer
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        book_id = request.data.get('id')
+        if not book_id:
+            return Response({"error": "Book ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            book = Book.objects.get(pk=book_id)
+        except Book.DoesNotExist:
+            return Response({"error": "Book not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = self.get_serializer(book, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+# View for deleting a book via POST with ID in request body
+class BookDeleteView(generics.GenericAPIView):
+    """
+    Handles POST requests to delete a book. Expects 'id' in the request body.
+    Permissions: Authenticated users only.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        book_id = request.data.get('id')
+        if not book_id:
+            return Response({"error": "Book ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            book = Book.objects.get(pk=book_id)
+            book.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Book.DoesNotExist:
+            return Response({"error": "Book not found"}, status=status.HTTP_404_NOT_FOUND)
