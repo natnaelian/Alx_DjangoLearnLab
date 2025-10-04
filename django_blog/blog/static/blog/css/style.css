@@ -12,8 +12,58 @@ header {
     padding: 1em;
 }
 
+header nav a {
+    color: white;
+    margin: 0 10px;
+    text-decoration: none;
+}
+
+header nav a:hover {
+    text-decoration: underline;
+}
+
 main {
     max-width: 800px;
     margin: 0 auto;
     padding: 20px;
+}
+
+form {
+    max-width: 500px;
+    margin: 20px 0;
+}
+
+form p {
+    margin: 10px 0;
+}
+
+form input, form textarea {
+    width: 100%;
+    padding: 8px;
+    margin: 5px 0;
+}
+
+form button {
+    background-color: #333;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+}
+
+form button:hover {
+    background-color: #555;
+}
+
+.messages {
+    list-style: none;
+    padding: 0;
+}
+
+.messages .success {
+    color: green;
+}
+
+.messages .error {
+    color: red;
 }
