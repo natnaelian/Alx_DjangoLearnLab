@@ -1,10 +1,11 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.mixes import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
 from django.contrib import messages
+from django.db.models import Q
 from .models import Post, Comment
 from .forms import CustomUserCreationForm, ProfileForm, PostForm, CommentForm
 
@@ -116,3 +117,26 @@ class CommentDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
 
     def get_success_url(self):
         return reverse_lazy('post_detail', kwargs={'pk': self.object.post.pk})
+
+class TagListView(ListView):
+    model = Post
+    template_name = 'blog/post_list.html'
+    context_object_name = 'posts'
+
+    def get_queryset(self):
+        tag = self.kwargs['tag_name']
+        return Post.objects.filter(tags__name=tag).order_by('-published_date')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['tag_name'] = self.kwargs['tag_name']
+        return context
+
+def search(request):
+    query = request.GET.get('q', '')
+    posts = Post.objects.filter(
+        Q(title__icontains=query) |
+        Q(content__icontains=query) |
+        Q(tags__name__icontains=query)
+    ).distinct().order_by('-published_date')
+    return render(request, 'blog/search_results.html', {'posts': posts, 'query': query})

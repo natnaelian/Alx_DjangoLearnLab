@@ -22,6 +22,27 @@ header nav a:hover {
     text-decoration: underline;
 }
 
+header .search-form {
+    margin-top: 10px;
+}
+
+header .search-form input {
+    padding: 5px;
+    width: 200px;
+}
+
+header .search-form button {
+    padding: 5px 10px;
+    background-color: #555;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+header .search-form button:hover {
+    background-color: #777;
+}
+
 main {
     max-width: 800px;
     margin: 0 auto;
