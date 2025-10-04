@@ -25,3 +25,4 @@ class Book(models.Model):
 
     class Meta:
         ordering = ['title']  # Orders books alphabetically by title
+
