@@ -10,4 +10,33 @@
         {% endif %}
         <p><a href="{% url 'post_list' %}">Back to posts</a></p>
     </article>
+
+    <h3>Comments</h3>
+    {% for comment in post.comments.all %}
+        <div class="comment">
+            <p>{{ comment.content }}</p>
+            <p>By {{ comment.author.username }} on {{ comment.created_at|date:"F d, Y H:i" }}
+                {% if comment.created_at != comment.updated_at %}
+                    (Updated: {{ comment.updated_at|date:"F d, Y H:i" }})
+                {% endif %}
+            </p>
+            {% if user == comment.author %}
+                <a href="{% url 'comment_update' post_id=post.pk comment_id=comment.pk %}">Edit</a> |
+                <a href="{% url 'comment_delete' post_id=post.pk comment_id=comment.pk %}">Delete</a>
+            {% endif %}
+        </div>
+    {% empty %}
+        <p>No comments yet.</p>
+    {% endfor %}
+
+    {% if user.is_authenticated %}
+        <h3>Add a Comment</h3>
+        <form method="post" action="{% url 'comment_create' post_id=post.pk %}">
+            {% csrf_token %}
+            {{ comment_form.as_p }}
+            <button type="submit">Post Comment</button>
+        </form>
+    {% else %}
+        <p><a href="{% url 'login' %}">Log in</a> to post a comment.</p>
+    {% endif %}
 {% endblock %}

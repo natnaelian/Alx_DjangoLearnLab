@@ -1,10 +1,16 @@
 {% extends 'blog/base.html' %}
 {% block content %}
-    <h2>Delete Post</h2>
-    <p>Are you sure you want to delete "{{ post.title }}"?</p>
+    <h2>Delete {% if post %}Post{% else %}Comment{% endif %}</h2>
+    <p>Are you sure you want to delete "{{ object|default:'this comment' }}"?</p>
     <form method="post">
         {% csrf_token %}
         <button type="submit">Confirm Delete</button>
     </form>
-    <p><a href="{% url 'post_list' %}">Cancel</a></p>
+    <p>
+        {% if post %}
+            <a href="{% url 'post_list' %}">Cancel</a>
+        {% else %}
+            <a href="{% url 'post_detail' post_id=object.post.pk %}">Cancel</a>
+        {% endif %}
+    </p>
 {% endblock %}
