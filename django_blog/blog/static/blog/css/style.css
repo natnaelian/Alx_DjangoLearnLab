@@ -67,3 +67,18 @@ form button:hover {
 .messages .error {
     color: red;
 }
+
+article {
+    border-bottom: 1px solid #ccc;
+    padding: 10px 0;
+    margin-bottom: 10px;
+}
+
+article a {
+    text-decoration: none;
+    color: #333;
+}
+
+article a:hover {
+    text-decoration: underline;
+}
